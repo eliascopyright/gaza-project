@@ -1,0 +1,17 @@
+# .gitignore
+*.zip
+*.geojson
+*.parquet
+*.shp
+*.dbf
+*.prj
+*.shx
+*.cpg
+*.sbx
+*.sbn
+*.xml
+__pycache__/
+*.ipynb
+out.json
+pretty.json
+test.py
