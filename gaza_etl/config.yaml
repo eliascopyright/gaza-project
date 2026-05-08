@@ -1,0 +1,14 @@
+paths:
+  base: .
+  raw: data
+  extracted: data_extracted
+  bronze: data/bronze
+  silver: data/silver
+  gold: data/gold
+  maps: maps
+
+ckan:
+  query: gaza
+  
+filters:
+  formats: [SHP, GEOJSON, CSV]

@@ -1,7 +1,7 @@
 import requests, zipfile
 from pathlib import	Path
 
-def download_from_hdx():
+def extract_from_db():
 	BASE_URL = "https://data.humdata.org/api/3/action/package_search"
 	params = {"q": "gaza"}
 	resp = requests.get(BASE_URL, params = params)

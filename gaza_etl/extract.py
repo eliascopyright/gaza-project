@@ -1,6 +1,6 @@
 import requests, zipfile
 from pathlib import	Path
-from download	import extract_from_db
+from .download	import extract_from_db
 
 def extract_all(cfg):
 	Path("data").mkdir(exist_ok=True)
@@ -24,4 +24,4 @@ def extract_all(cfg):
 		with zipfile.ZipFile(z, 'r') as zf:
 			zf.extractall(dest)
 			print(f"Extracted ->", dest.resolve())
-		return	out
+	return	out
