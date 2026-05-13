@@ -1,18 +1,18 @@
 from pathlib import	Path
-import os, sys
+import os, sys, subprocess
 
 import	yaml, geopandas	as gpd, requests, zipfile, argparse
 from app.app import serve_map
-import uvicorn
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 from gaza_etl.extract import	extract_all
 from gaza_etl.transform	import	convert_all
 from gaza_etl.download	import	extract_from_db
 from gaza_etl.map	import	make_map
 from gaza_etl.map_kepler import	make_map_kepler
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import RedirectResponse
+# from fastapi.staticfiles import StaticFiles
+# from fastapi.responses import RedirectResponse
 
 
 
@@ -24,8 +24,10 @@ def serve_map():
     cfg = load_cfg()
     deck = make_map_kepler(cfg)
     deck_html = deck.to_html()
-    deck.to_html("maps/gaza_layers.html")
-    return RedirectResponse(url = "/static/gaza_layers.html")
+    with open("maps/gaza_kepler.html", "r") as f:
+        return f.read()
+    return deck_html
+    # return RedirectResponse(url = "/static/gaza_layers.html")
   
    
 BASE_DIR = Path(__file__).resolve().parent / "gaza_etl"
@@ -57,7 +59,11 @@ def main():
  if args.cmd in ("map", "run-all"):
      make_map_kepler(cfg)
  if args.cmd == "serve":
-    uvicorn.run(app, host= "0.0.0.0", port=8000)
+    script_path = os.path.join(os.path.dirname(__file__), "streamlit_app.py")
+    
+    # Lancement du processus Streamlit
+    cmd = [sys.executable, "-m", "streamlit", "run", script_path]
+    subprocess.run(cmd)
     
 
 if __name__ == "__main__":

@@ -49,7 +49,6 @@ def make_map_kepler(cfg):
 #     print(l.data)
  print(deck)
  return deck
- 
 def save(deck, outdir, name):
  outdir.mkdir(exist_ok=True)
  deck.to_html(outdir / f"{name}.html")
