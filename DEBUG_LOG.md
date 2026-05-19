@@ -150,4 +150,27 @@ FIN## [SESSION_2026-05-15] - ÉLUCIDATION DU CONFLIT DE CONFIG
 - **Méthode :** Isolation stricte (`--no-rc`) pour garantir la reproductibilité du pipeline.
 - **Résultat :** Environnement 100% propre, prêt pour le développement de l'architecture de streaming.
 ---
+## [SESSION_2026-05-18] - PARADIGME DES BASES DE DONNÉES EMBARQUÉES (DUCKDB)
+---
+### 🧠 CONCEPT APPRIS : Base In-Memory vs Serveur Dédié
+- **Définition :** DuckDB est une base de données relationnelle colonnaire embarquée. Elle ne nécessite pas de processus serveur (contrairement à PostgreSQL) et s'exécute dans le thread de l'application Python.
+- **Mécanisme de Stockage :** 1. `:memory:` -> Stockage volatile dans la RAM, idéal pour le traitement de flux/stream à haute performance (zéro IO disque).
+  2. `fichier.db` -> Stockage persistant sous forme d'un fichier unique sur le système de fichiers local.
+- **Cas d'usage DE Senior :** Remplacement avantageux de Pandas (il charge tout en mémoire d'un coup (Eager) et utilise beaucoup de RAM) pour le requêtage de fichiers volumineux (GeoJSON, Parquet) grâce au requêtage colonnaire et à l'analyse spatiale vectorisée.
+---
+## [SESSION_2026-05-18] - CYCLE DE VIE DES EXTENSIONS DUCKDB
+---
+### 🛠️ RÉSOLUTION : Échec de résolution de ST_Read (Spatial Extension)
+- **Symptôme :** Erreur de fonction inconnue sur `ST_Read` lors de l'exécution du fragment Streamlit.
+- **Cause :** L'extension `spatial`, bien qu'installée globalement, n'était pas chargée (`LOAD`) dans le contexte d'exécution isolé du fragment Streamlit.
+- **Action Senior :** Ajout systématique de la commande `db.execute("LOAD spatial;")` juste avant la requête analytique pour garantir la présence des fonctions géospatiales au runtime.
+---
+## [SESSION_2026-05-18] - ERREUR D'ENTRÉE/SORTIE GDAL (IO ERROR)
+---
+### 🛑 BUG : Échec d'ouverture du dataset GDAL par ST_Read
+- **Symptôme :** `IO Error: Could not open GDAL dataset` pointant vers le répertoire `data\bronze`.
+- **Cause :** La fonction `ST_Read` (via le driver GDAL) requiert un descripteur de fichier ou un pattern explicite, et non un pointeur vers un dossier/répertoire brut.
+- **Résolution :** - Option 1 : Spécification du nom de fichier absolu.
+  - Option 2 (DE Target) : Utilisation du wildcard `*.geojson` pour permettre à DuckDB d'exécuter un scan de type "Globbing" sur l'ensemble des partitions du dossier bronze.
+---
 FIN

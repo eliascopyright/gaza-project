@@ -34,4 +34,4 @@ def log_and_push():
         print(f"\n❌ Erreur Git : {e}")
 
 if __name__ == "__main__":
-    log_and_push()""
+    log_and_push()
