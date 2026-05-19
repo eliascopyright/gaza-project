@@ -68,4 +68,86 @@
 - **Résultat :** Environnement stable et 100% géré par libmamba.
 - **Statut :** PROTECTION ACTIVÉE.
 ---
+## [SESSION_2026-05-13] - GESTION DES RESSOURCES ET VERSIONS
+---
+### 🛠️ ACTION : Installation de setuptools (pkg_resources)
+- **Objectif :** Permettre au script de localiser des fichiers de données internes ou de vérifier les versions des dépendances via `pkg_resources`.
+- **Méthode :** Installation de `setuptools` via `conda-forge` pour éviter tout conflit avec les outils de base de l'environnement.
+- **Note technique :** Surveillance des performances au démarrage de Streamlit (risque de latence lié au scan des points d'entrée par pkg_resources).
+- **Alternative future :** Envisager la migration vers `importlib.metadata` pour plus de rapidité.
+- **Statut :** COMPOSANT AJOUTÉ.
+---
+## [SESSION_2026-05-13] - RECONSOLIDATION DES CHEMINS CONFIG
+---
+### ⚙️ CONFIGURATION : Modification de `envs_dirs`
+- **Objectif :** Rediriger la création d'environnements vers l'espace utilisateur pour contourner définitivement les erreurs de permission NTFS.
+- **Action :** 
+    1. `micromamba config append envs_dirs` -> Nouveau point de montage.
+    2. `micromamba config append pkgs_dirs` -> Déplacement du cache de téléchargement.
+- **Résultat attendu :** Fin des erreurs "Configuration introuvable" lors de l'installation de nouveaux paquets comme `pyyaml`.
+- **Statut :** SYSTÈME RÉALIGNÉ.
+---
+FIN## [SESSION_2026-05-15] - ÉLUCIDATION DU CONFLIT DE CONFIG
+---
+### 🔍 ANALYSE : Origine des fichiers fantômes
+- **Constat :** Micromamba agrège les fichiers de configuration (.mambarc + .condarc + config interne).
+- **Cause :** Des restes d'installations précédentes (Conda/VS Code) polluaient le processus de décision du solver.
+- **Action :** Transition vers une exécution en mode "Isolation" (`--no-rc`) pour garantir que seuls les chemins du dossier Users sont utilisés.
+- **Résultat attendu :** Alignement strict entre l'interpréteur Python et les dossiers de modules.
+---
+## [SESSION_2026-05-15] - NETTOYAGE DU PRÉFIXE
+---
+### 🛑 BUG : "non conda folder exists at prefix"
+- **Symptôme :** Refus de création d'environnement par libmamba.
+- **Cause :** Présence de fichiers résiduels dans le dossier cible sans les métadonnées de structure Conda.
+- **Action :** 1. Suppression forcée du dossier `gaza_project` via `Remove-Item`.
+    2. Relance de la création sur un répertoire vierge.
+- **Statut :** PRÉPARATION DU TERRAIN.
+---
+## [SESSION_2026-05-15] - FORÇAGE DE CIBLE (TARGETED INSTALL)
+---
+### 🛠️ STRATÉGIE : Installation par cible directe
+- **Problème :** Persistance de l'absence de `pkg_resources`.
+- **Hypothèse :** Conflit de PATH ou environnement mal lié (ghost environment).
+- **Action :** Utilisation du flag `--target` pour bypasser la gestion de l'environnement et copier les fichiers sources directement dans le `site-packages` local.
+- **Vérification :** Inspection de `sys.path` pour confirmer l'alignement des répertoires.
+---
+## [SESSION_2026-05-16] - CORRECTION DU REPOSITORING KEPLERGL
+---
+### 🛠️ PATCH : NameError 'Unicode'
+- **Symptôme :** `NameError: name 'Unicode' is not defined` à la ligne 96 de `keplergl.py`.
+- **Cause :** Manque d'importation explicite de la classe `Unicode` depuis le package `traitlets` dans le code source de la bibliothèque tiers.
+- **Action :** Ajout manuel de `from traitlets import Unicode...` au sommet du fichier cible.
+- **Statut :** PROGRESSION VALIDÉE (LE CORPS DE LA LIBRAIRIE S'EXÉCUTE DESORMAIS).
+---
+## [SESSION_2026-05-17] - PIVOT ARCHITECTURAL : ABANDON DE KEPLERGL
+---
+### 🏛️ DÉCISION DESIGN : Choix technologique orienté Production
+- **Constat :** KeplerGL introduit une dette technique majeure (libs obsolètes, rupture au runtime Python 3.11+) et gère mal le rafraîchissement par flux (State Rendering inefficace).
+- **Pivot DE Senior :** Migration de la couche de visualisation vers une stack standard de l'industrie : `Pydeck` pour le rendu cartographique performant, combiné à un stockage intermédiaire léger (`DuckDB`) pour bufferiser le stream de données géographiques.
+- **Objectif :** Garantir la scalabilité de l'application face à l'accumulation des données du stream.
+---
+## [SESSION_2026-05-17] - PIVOT ARCHITECTURAL : ABANDON DE KEPLERGL
+---
+### 🏛️ DÉCISION DESIGN : Choix technologique orienté Production
+- **Constat :** KeplerGL introduit une dette technique majeure (libs obsolètes, rupture au runtime Python 3.11+) et gère mal le rafraîchissement par flux (State Rendering inefficace).
+- **Pivot DE Senior :** Migration de la couche de visualisation vers une stack standard de l'industrie : `Pydeck` pour le rendu cartographique performant, combiné à un stockage intermédiaire léger (`DuckDB`) pour bufferiser le stream de données géographiques.
+- **Objectif :** Garantir la scalabilité de l'application face à l'accumulation des données du stream.
+---
+## [SESSION_2026-05-17] - PURGE ET REMISE À ZÉRO DE L'INFRASTRUCTURE LOCALE
+---
+### 🛠️ ACTION : Hard Reset de l'environnement virtuel
+- **Objectif :** Éliminer la dette technique accumulée lors des tentatives d'installation de KeplerGL (fichiers tar.gz manuels, conflits Jaraco).
+- **Nouvelle Stack Cible :** Python 3.11 + Streamlit + Pydeck (Visualisation performante) + DuckDB (Moteur de stockage/calcul spatial).
+- **Méthode :** Isolation stricte (`--no-rc`) pour garantir la reproductibilité du pipeline.
+- **Résultat :** Environnement 100% propre, prêt pour le développement de l'architecture de streaming.
+---
+## [SESSION_2026-05-17] - PURGE ET REMISE À ZÉRO DE L'INFRASTRUCTURE LOCALE
+---
+### 🛠️ ACTION : Hard Reset de l'environnement virtuel
+- **Objectif :** Éliminer la dette technique accumulée lors des tentatives d'installation de KeplerGL (fichiers tar.gz manuels, conflits Jaraco).
+- **Nouvelle Stack Cible :** Python 3.11 + Streamlit + Pydeck (Visualisation performante) + DuckDB (Moteur de stockage/calcul spatial).
+- **Méthode :** Isolation stricte (`--no-rc`) pour garantir la reproductibilité du pipeline.
+- **Résultat :** Environnement 100% propre, prêt pour le développement de l'architecture de streaming.
+---
 FIN

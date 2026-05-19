@@ -2,10 +2,6 @@ from pathlib import	Path
 import os, sys, subprocess
 
 import	yaml, geopandas	as gpd, requests, zipfile, argparse
-from app.app import serve_map
-from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse
 from gaza_etl.extract import	extract_all
 from gaza_etl.transform	import	convert_all
 from gaza_etl.download	import	extract_from_db
@@ -14,12 +10,20 @@ from gaza_etl.map_kepler import	make_map_kepler
 # from fastapi.staticfiles import StaticFiles
 # from fastapi.responses import RedirectResponse
 
+import sys
+import os
 
+# On force l'ajout du dossier site-packages au cas où Python l'aurait oublié
+site_packages = r"C:\Users\elias\micromamba\envs\gaza_project\Lib\site-packages"
+if site_packages not in sys.path:
+    sys.path.insert(0, site_packages)
 
-app = FastAPI()
-app.mount("/static", StaticFiles(directory="maps"), name="static")
-
-@app.get("/map", response_class=HTMLResponse)
+try:
+    import pkg_resources
+    print("✅ Greffe réussie : pkg_resources est chargé !")
+except ImportError:
+    print("❌ Même avec la greffe, pkg_resources est invisible.")
+    
 def serve_map():
     cfg = load_cfg()
     deck = make_map_kepler(cfg)
