@@ -1,14 +1,16 @@
 paths:
   base: .
   raw: data
-  extracted: data_extracted
+  extracted: data_extracted/zip
   bronze: data/bronze
   silver: data/silver
   gold: data/gold
   maps: maps
+  logs: logs
 
-ckan:
-  query: gaza
+query:
+  gaza: gaza boundaries
+  thailand: thailand subnational boundaries
   
 filters:
   formats: [SHP, GEOJSON, CSV]

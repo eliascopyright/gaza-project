@@ -1,16 +1,24 @@
+from pathlib import Path
 import pydeck as pdk
 import duckdb
+from utilis.utilis import Utilis
 import pandas as pd
 import streamlit as st
-import os
 
 st.set_page_config(layout = "wide", page_title = "HDX Geo Explorer")
 
-DATA_DIR = os.path.join(os.path.dirname(__file__), "data", "bronze")
+cfg = Utilis.load_cfg()
+
+DATA_DIR = Path(cfg['paths']['bronze2'])
+
+LOGGER = Utilis.setup_logging('streamlit_gaza', "logs_streamlit.log")
+GEOJSON_PATH = [f.stem for f in list(DATA_DIR.glob("*.json"))]
+e = list(DATA_DIR.glob("*.json"))
+LOGGER.info(f"Voila Data_dir : {e}")
 
 st.sidebar.title("Configuration")
 # 
-st.selected_file = st.sidebar.selectbox("Choisir une couche: ", os.listdir(DATA_DIR))
+st.selected_file = st.sidebar.selectbox("Choisir une couche: ",(DATA_DIR))
 
 
 
@@ -28,17 +36,16 @@ def get_db_connection():
 
 db = get_db_connection()
 
-GEOJSON_PATH = r"C:\Users\elias\datapython\gaza-project\data\bronze\\*.geojson"
+GEOJSON_PATH = Path(cfg['paths']['bronze2'])
 
 # 2. Fragment interactif (streamnig layer)
 # run_every=5 pour rafraîchir toutes les 5 secondes
-
 @st.fragment(run_every=5)
 def render_live_map():
     
     st.subheader("Flux de données en temps réel")
     
-    if not os.path.exists(GEOJSON_PATH):
+    if not GEOJSON_PATH == []:
         st.error(f"En attnte du fichier GeoJSON dans {GEOJSON_PATH}")
         return
     
@@ -46,22 +53,37 @@ def render_live_map():
         db.execute("LOAD spatial;")
         query = f"""
         SELECT
-              CAST(properties ->> 'type' AS VARCHAR) AS type,
-              ST_X(geom) AS longitude,
-              ST_Y(geom) AS latitude,
+              Shape_Area,
+              ST_X(ST_Centroid(geom)) AS longitude,
+              ST_Y(ST_Centroid(geom)) AS latitude,
             FROM ST_READ('{GEOJSON_PATH}')
         """
         
         df = db.execute(query).df()
     
         st.metric(label = "Nombre de points ingérés", value = len(df))
-        
+        # Configuration de la carte Pydeck
         view_state = pdk.ViewState(
-            latitude = df['latitude'].mean() if not df.empty else 31.43,
-            longitude = df["longitude"].mean() if not df.empty else 34.38,
-            zoom  = 10,
+            latitude=df['latitude'].mean() if not df.empty else 31.43,
+            longitude=df['longitude'].mean() if not df.empty else 34.38,
+            zoom=10,
             pitch=30
         )
+        
+        layer = pdk.Layer(
+            "ScatterplotLayer",
+            data=df,
+            get_position="[longitude, latitude]",
+            get_color="[230, 50, 50, 180]",
+            get_radius=150,
+            pickable=True,
+        )
+        
+        st.pydeck_chart(pdk.Deck(
+            layers=[layer],
+            initial_view_state=view_state,
+            tooltip={"text": "Type: {type}"}
+        ))
     except Exception as e:
         st.error(f'Erreur de lecture : {e}')
 
